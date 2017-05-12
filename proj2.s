@@ -9,7 +9,7 @@ S: .space 4 #suma czesciowa
 n:.space 4
 m:.space 4
 u:.space 8
-final_result:.space 4
+final_result:.space 8
 n_semicolon:.space 4
 r:.space 4
 r_inv:.space 4
@@ -24,25 +24,25 @@ D:.space 4
 
 .global _start
 _start:
-	movl $2,W
-	movl $31,n
-	movl $8, r
+	movl $256,W
+	movl $17,n
+	movl $32, r
 	pushl n
 	pushl r
 	call mulinv
 	movl %eax, r_inv
 	pushl n
+	
 	pushl r
 	call wild_n
 	movl %eax, n_semicolon
 	xor %esi, %esi
-	movl $0x3, %eax
-	movl %eax, a(,%esi,1)
-	movl $0x4, %eax
-	movl %eax, b(,%esi,1)
+	movb $31, %al
+	movb %al, a(,%esi,1)
+	movb $29, %al
+	movb %al, b(,%esi,1)
 	movl $1, %eax #o jeden mniej niz jest dlugosc tabeli
 	movl %eax, length(,%esi,4)
-
 	
 	
 step_1:
@@ -52,24 +52,21 @@ ab_prod:
 	movl length, %ecx
 outer_loop:	#for(esi=0;esi<length;esi++){C=0;for(edi=0;edi<length;edi++{zrob mnozenie}}
 	xor %edi, %edi
-	movl $0, C(,%edi,4)
+	movb $0, C(,%edi,1)
 inner_loop:
-	movl b(,%esi,4), %ebx
-	movl %esi,tmp
-	imull $4,%esi #mnozenie esi zeby sie adres zgadzal do offsetu w adresowaniu pozniej
-	movl a(,%edi,4), %eax
-	imull %ebx
-	addl C, %eax
-	adcl $0, %edx
-	addl t(%esi,%edi,4), %eax
-	adcl $0, %edx
-	movl %edx, C
-	movl %eax, S
-	movl S, %eax
-	movl %eax, t(%esi,%edi,4)
-	movl C, %eax
-	movl %eax, t(%esi,%ecx,4)
-	movl tmp, %esi #przwrocenie esi do wlasciwej wartosci
+	movb b(,%esi,1), %bl
+	movb a(,%edi,1), %al
+	imulb %bl
+	addb C, %al
+	adcb $0, %dl
+	addb t(%esi,%edi,1), %al
+	adcb $0, %dl
+	movb %dl, C
+	movb %al, S
+	movb S, %al
+	movb %al, t(%esi,%edi,1)
+	movb C, %al
+	movb %al, t(%esi,%ecx,1)
 	incl %edi
 	cmpl length, %edi
 	jl inner_loop
@@ -80,38 +77,38 @@ inner_loop:
 step_2:
 outer_loop_2:	#for(esi=0;esi<length;esi++){C=0;for(edi=0;edi<length;edi++{zrob mnozenie}}
 	xor %edi, %edi
-	movl $0, C(,%edi,4)
-	movl t(%esi), %eax
-	movl n_semicolon, %ebx
-	imull %ebx
+	movb $0, C(,%edi,1)
+	movb t(,%esi,1), %al
+	movb n_semicolon, %bl
+	imulb %bl
 	movl W, %ebx
 	idivl %ebx
-	movl %edx, m
+	movb %dl, m
 inner_loop_2:
-	movl n(%edi), %ebx
 	movl %esi,tmp
-	imull $4,%esi #mnozenie esi zeby sie adres zgadzal do offsetu w adresowaniu pozniej
-	movl m, %eax
-	imull %ebx
-	addl C, %eax
-	adcl $0, %edx
-	addl t(%esi,%edi,4), %eax
-	adcl $0, %edx
-	movl %edx, C
-	movl %eax, S
-	movl S, %eax
-	movl %eax, t(%esi,%edi,4)
+	movb n(,%edi,1), %bl
+	movb m, %bl
+	imulb %bl
+	addb C, %dl
+	adcb $0, %dl
+	addb t(%esi,%edi,1), %al
+	adcb $0, %dl
+	movb %dl, C
+	movb %al, S
+	movb S, %al
+	movb %al, t(%esi,%edi,1)
 	clc
 	xor %edx,%edx
 add_carry:
 	cmpb $0,%dl
 	jne set_carry
+
 carry_set:
-	movl t(%esi,%ecx,4),%eax
-	adcl C, %eax
+	movb t(%esi,%ecx,1),%al
+	adcb C, %al
 	setcb %dl
-	movl %eax, t(%esi,%ecx,4)
-	addl $4, %esi
+	movb %al, t(%esi,%ecx,1)
+	incl %esi
 	cmpb $0,%dl	
 	jne add_carry
 
@@ -123,13 +120,11 @@ carry_set:
 	cmpl length, %esi 
 	jl outer_loop_2
 
-	movl length, %eax
-	imull $4,%eax
-	movl %eax, %ecx
+	movl length, %ecx
 	xor %esi, %esi
 shift:
-	movl t(%ecx,%esi,4),%eax
-	movl %eax, u(%esi)
+	movb t(%ecx,%esi,1),%al
+	movb %al, u(,%esi,1)
 	incl %esi
 	cmpl %ecx, %esi
 	jl shift
@@ -139,24 +134,24 @@ step_3:
 	movl length, %ecx
 	movl $0, B
 last_loop:
-	movl u(%esi), %eax
-	movl n(%esi), %ebx
-	subl %ebx, %eax
-	movl b, %edx
-	adcl $0, %edx
-	movl %edx, B
-	subl B, %eax
-	movl %eax, D(%esi)
+	movb u(,%esi,1), %al
+	movb n(,%esi,1), %bl
+	subb %bl, %al
+	movb b, %dl
+	adcb $0, %dl
+	movb %dl, B
+	subb B, %al
+	movb %al, D(,%esi,1)
 	xor %ebx, %ebx
-	movl %ebx, B
-	adcl $0,%ebx
-	movl u(%ecx), %eax
-	subl B, %eax
-	movl %eax,D(%esi)
+	movb %bl, B
+	adcb $0,%bl
+	movb u(,%ecx,1), %al
+	subb B, %al
+	movb %al,D(,%esi,1)
 	xor %edx,%edx
-	sbbl $0,%edx
-	movl %edx, B
-	movl %eax, D
+	sbbb $0,%dl
+	movb %dl, B
+	movb %al, D
 	cmpl %esi, %ecx
 	jl last_loop
 
@@ -165,8 +160,8 @@ last_loop:
 	xor %esi,%esi
 	jne return_u	
 return_t:
-	movl t(%esi),%eax
-	movl %eax, final_result(%esi)
+	movb t(,%esi,1),%al
+	movb %al, final_result(,%esi,1)
 	incl %esi
 	cmpl length, %esi
 	jl return_t
@@ -179,8 +174,8 @@ set_carry:
 	stc
 	jmp carry_set
 return_u:
-	movl u(%esi),%eax
-	movl %eax, final_result(%esi)
+	movb u(,%esi,1),%al
+	movb %al, final_result(,%esi,1)
 	incl %esi
 	cmpl length, %esi
 	jl return_u
