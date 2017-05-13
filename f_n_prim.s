@@ -24,8 +24,8 @@ f_n_prim:
 	xor %eax, %eax
 	subl %ebx, %eax
 
-	pushl r
 	pushl %eax
+	pushl r
 	call f_mul_inv
 
 	movl %ebp, %esp
