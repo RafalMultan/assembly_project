@@ -1,11 +1,10 @@
 .code32
 .align 32
 .data
-a: .space 4 #liczba a
-b: .space 4 #liczba b
-t: .space 12 #tablica na wynik
-C: .space 4 #przeniesienie
-S: .space 4 #suma czesciowa
+
+t: .space  #tablica na wynik 2*size(a)+1
+C: .space 1 #przeniesienie
+S: .space 1 #suma czesciowa
 n:.space 4
 m:.space 4
 u:.space 8
@@ -19,14 +18,16 @@ W:.space 4
 B:.space 4
 save_esi:.space 4
 D:.space 4
+a: .long 0x00034525 #liczba a
+b: .long 0x00074615 #liczba b
 .text
 
 
 .global _start
 _start:
 	movl $256,W
-	movl $17,n
-	movl $32, r
+	movl $476701,n
+	movl $524288, r
 	pushl n
 	pushl r
 	call mulinv
@@ -37,12 +38,10 @@ _start:
 	call wild_n
 	movl %eax, n_semicolon
 	xor %esi, %esi
-	movb $31, %al
-	movb %al, a(,%esi,1)
-	movb $29, %al
-	movb %al, b(,%esi,1)
-	movl $1, %eax #o jeden mniej niz jest dlugosc tabeli
+	
+	movl $3, %eax #w bajtach dlugosc tabeli
 	movl %eax, length(,%esi,4)
+
 	
 	
 step_1:
@@ -54,14 +53,15 @@ outer_loop:	#for(esi=0;esi<length;esi++){C=0;for(edi=0;edi<length;edi++{zrob mno
 	xor %edi, %edi
 	movb $0, C(,%edi,1)
 inner_loop:
+	xor %edx,%edx
 	movb b(,%esi,1), %bl
 	movb a(,%edi,1), %al
 	imulb %bl
 	addb C, %al
-	adcb $0, %dl
+	adcb $0, %ah
 	addb t(%esi,%edi,1), %al
-	adcb $0, %dl
-	movb %dl, C
+	adcb $0, %ah
+	movb %ah, C
 	movb %al, S
 	movb S, %al
 	movb %al, t(%esi,%edi,1)
@@ -83,33 +83,33 @@ outer_loop_2:	#for(esi=0;esi<length;esi++){C=0;for(edi=0;edi<length;edi++{zrob m
 	imulb %bl
 	movl W, %ebx
 	idivl %ebx
-	movb %dl, m
+	movb %ah, m
 inner_loop_2:
 	movl %esi,tmp
 	movb n(,%edi,1), %bl
 	movb m, %bl
 	imulb %bl
-	addb C, %dl
-	adcb $0, %dl
+	addb C, %ah
+	adcb $0, %ah
 	addb t(%esi,%edi,1), %al
-	adcb $0, %dl
-	movb %dl, C
+	adcb $0, %ah
+	movb %ah, C
 	movb %al, S
 	movb S, %al
 	movb %al, t(%esi,%edi,1)
 	clc
 	xor %edx,%edx
 add_carry:
-	cmpb $0,%dl
+	cmpb $0,%ah
 	jne set_carry
 
 carry_set:
 	movb t(%esi,%ecx,1),%al
 	adcb C, %al
-	setcb %dl
+	setcb %ah
 	movb %al, t(%esi,%ecx,1)
 	incl %esi
-	cmpb $0,%dl	
+	cmpb $0,%ah	
 	jne add_carry
 
 	movl tmp, %esi #przwrocenie esi do wlasciwej wartosci
@@ -137,9 +137,9 @@ last_loop:
 	movb u(,%esi,1), %al
 	movb n(,%esi,1), %bl
 	subb %bl, %al
-	movb b, %dl
-	adcb $0, %dl
-	movb %dl, B
+	movb b, %ah
+	adcb $0, %ah
+	movb %ah, B
 	subb B, %al
 	movb %al, D(,%esi,1)
 	xor %ebx, %ebx
@@ -147,10 +147,9 @@ last_loop:
 	adcb $0,%bl
 	movb u(,%ecx,1), %al
 	subb B, %al
-	movb %al,D(,%esi,1)
 	xor %edx,%edx
-	sbbb $0,%dl
-	movb %dl, B
+	sbbb $0,%ah
+	movb %ah, B
 	movb %al, D
 	cmpl %esi, %ecx
 	jl last_loop
@@ -164,7 +163,7 @@ return_t:
 	movb %al, final_result(,%esi,1)
 	incl %esi
 	cmpl length, %esi
-	jl return_t
+	jle return_t
 
 end:
 	movl $1, %eax
@@ -178,5 +177,5 @@ return_u:
 	movb %al, final_result(,%esi,1)
 	incl %esi
 	cmpl length, %esi
-	jl return_u
+	jle return_u
 	jmp end
