@@ -8,7 +8,7 @@ n:.space 4
 n_prim:.space 4
 .text
 .global f_n_prim
-.type f_n_primm, @function
+.type f_n_prim, @function
 f_n_prim:
 
 	pushl %ebp
