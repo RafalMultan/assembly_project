@@ -2,7 +2,7 @@
 .align 32
 .data
 
-t: .space  #tablica na wynik 2*size(a)+1
+t: .space 12 #tablica na wynik 2*size(a)+1
 C: .space 1 #przeniesienie
 S: .space 1 #suma czesciowa
 n:.space 4
@@ -18,16 +18,15 @@ W:.space 4
 B:.space 4
 save_esi:.space 4
 D:.space 4
-a: .long 0x00034525 #liczba a
-b: .long 0x00074615 #liczba b
+a: .long 0x5255 #liczba a
+b: .long 0x5615 #liczba b
+
 .text
-
-
 .global _start
 _start:
 	movl $256,W
-	movl $476701,n
-	movl $524288, r
+	movl $50021, n
+	movl $65536, r
 	pushl n
 	pushl r
 	call mulinv
@@ -157,7 +156,13 @@ last_loop:
 	movl B,%eax
 	cmpl $0,%eax
 	xor %esi,%esi
-	jne return_u	
+	jne return_u
+	movl length, %eax
+	movl $4,%ebx
+	imull %ebx
+	movl %eax,length
+	xor %edx, %edx
+	xor %eax, %eax	
 return_t:
 	movb t(,%esi,1),%al
 	movb %al, final_result(,%esi,1)
