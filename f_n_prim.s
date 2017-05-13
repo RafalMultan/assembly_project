@@ -15,17 +15,18 @@ f_n_prim:
 	movl %esp, %ebp
 
 	movl 8(%ebp), %eax #grab r from stack
-	movl %eax, r
+	movl %eax, n
 	
 	movl 12(%ebp), %eax #grab n from stack
-	movl %eax, n
+	movl %eax, r
 
 	movl n, %ebx
 	xor %eax, %eax
 	subl %ebx, %eax
 
-	pushl %eax
 	pushl r
+	pushl %eax
+	
 	call f_mul_inv
 
 	movl %ebp, %esp

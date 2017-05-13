@@ -10,9 +10,9 @@
 
 .section .text
 
-.global mulinv
-.type mulinv, @function
-mulinv:
+.global f_mul_inv
+.type f_mul_inv, @function
+f_mul_inv:
 
 	pushl %ebp
 	movl %esp, %ebp
@@ -90,7 +90,7 @@ add_x1b0:
 
 end_mulinv:
 	mov x1, %eax
-	movl %ebp, %esp,
+	movl %ebp, %esp
 	popl %ebp
 
 ret
