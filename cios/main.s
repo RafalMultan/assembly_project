@@ -10,7 +10,8 @@
 	r_inv: .space 4
 	r: .space 4 
 	W: .space 4
-	m: .space 4
+	m: .space 1
+	mn: .space 8
 	
 .text
 .globl main
@@ -63,7 +64,7 @@ inner_loop:
 	adcb $0, %bl	#add carry from imul
 	addb C, %al	#add carry fr		om last iteration
 	adcb $0, %bl	#add carry from ^
-	addb %al, ttab(,%esi,1) #zrobić wynik do s, wszystko ponad do C
+	addb %al, ttab(,%esi,1) 
 	movb %bl, C
 	inc %esi
 	jmp inner_loop
@@ -85,13 +86,46 @@ exit_inner_loop:
 	imulb %bl
 	movl W, %ebx
 	idivl %ebx
-	movb %dl, m
-	
-	
+	movb %dl, m	#m computed
+	# loop j=0 to s
+	# (C, S) =   m*n[j] + t[j] + C 
+	xor %esi, %esi
 
+loop_mn:
+	cmp size, %esi
+	je exit_loop_mn
 
+	xor %ebx, %ebx #this iteration C
+	movb m, %al
+	imulb n(,%esi,1)
+	adcb $0, %bl
+	addb C, %al
+	adcb $0, %bl
+	addb ttab(,%esi,1), %al
+	adcb $0, %bl
+	movb %bl, C
+	movb %al, ttab(,%esi,1)
+	inc %esi
+
+exit_loop_mn:
+	movl size, %esi
+	movb C, %al
+	addb %al, ttab(,%esi,1)
+	adcb $0, %bl
+		
+	addb %bl, 1+ttab(,%esi,1)
+	xor %esi, %esi
+	
+loop_shift_right
+	cmp size, %esi
+	movb ttab(,%esi,1), %al
+	inc %esi
+	movb %al, ttab(,%esi,1)
+	jmp loop_shift_right
 
 end_outter_loop:
+
+	#last part
 
 #==========================
 	movl %ebp, %esp
