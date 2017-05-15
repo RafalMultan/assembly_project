@@ -23,7 +23,8 @@ main:
 
 	movl $17, n
 	movl $32, r
-	movl $256, W	
+	movl $256, W
+	movl $4, size	
 
 	#calculate n' and inv_r
 
@@ -84,8 +85,7 @@ exit_inner_loop:
 	movb n_prim, %al
 	movb ttab(,%ebx,1), %bl
 	imulb %bl
-	movl W, %ebx
-	idivl %ebx
+	idivl W
 	movb %dl, m	#m computed
 	# loop j=0 to s
 	# (C, S) =   m*n[j] + t[j] + C 
@@ -116,16 +116,68 @@ exit_loop_mn:
 	addb %bl, 1+ttab(,%esi,1)
 	xor %esi, %esi
 	
-loop_shift_right
+loop_shift_right:
 	cmp size, %esi
+	je exit_shift_right
 	movb ttab(,%esi,1), %al
 	inc %esi
 	movb %al, ttab(,%esi,1)
+	inc %edi
 	jmp loop_shift_right
+
+exit_shift_right:
+	jmp outter_loop	
 
 end_outter_loop:
 
-	#last part
+	#calculate new m
+	xor %eax, %eax
+	movb n_prim, %al
+	xor %esi, %esi
+	movb ttab(,%esi,1), %bl
+	imulb %bl
+	xor %edx, %edx
+	idivl W
+	movl %edx, m
+
+	xor %ebx, %ebx
+
+	movl m, %eax
+	imulb n
+	adcb $0, %bl
+	addb ttab(,%esi,1), %al
+	adcb $0, %bl
+	movb %bl, C
+	movb %al, S		
+
+	movl $1, %esi
+finish:
+	cmp size, %esi
+	je exit_finish
+	xor %ebx, %ebx
+	movb n(,%esi,1), %al
+	imulb m
+	adcb $0, %bl
+	addb ttab(,%esi,1), %al
+	adcb $0, %bl
+	addb C, %al
+	adcb $0, %bl
+	movb %bl, C
+	movb %al, -1+ttab(,%esi,1)
+	inc %esi
+	jmp finish
+
+exit_finish:
+	xor %ebx, %ebx	
+	movb C, %al
+	addb %al, ttab(,%esi,1)
+	adcb $0, %bl
+	movb ttab(,%esi,1), %al
+	movb %al, -1+ttab(,%esi,1)
+	movb 1+ttab(,%esi,1), %al
+	addb C, %al
+	movb %al, ttab(,%esi,1) 
+	
 
 #==========================
 	movl %ebp, %esp
