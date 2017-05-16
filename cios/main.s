@@ -1,5 +1,5 @@
 .data
-	size: .space 1
+	size: .space 4
 	C: .space 1
 	atab: .space 4
 	btab: .space 4
@@ -23,9 +23,20 @@ main:
 
 	movl $17, n
 	movl $32, r
-	movl $256, W
-	movl $4, size	
+	movl $256, W	
 
+	xor %esi, %esi
+	xor %eax, %eax
+	
+	movb $31, %al
+	movb %al, atab(,%esi,1)
+	movb $29, %al
+	movb %al, btab(,%esi,1)
+	movl $1, %eax
+	movl %eax, size
+	
+	
+	
 	#calculate n' and inv_r
 
 	pushl n
@@ -48,7 +59,7 @@ outter_loop:
 	je end_outter_loop
 	
 	xor %eax, %eax
-	movl %eax, C #C = 0
+	movb %al, C #C = 0
 	xor %esi, %esi
 inner_loop:
 	cmp size, %esi
@@ -62,7 +73,8 @@ inner_loop:
 	
 	imulb %bl	#a[j]*b[i]
 	xor %ebx, %ebx
-	adcb $0, %bl	#add carry from imul
+	
+	movb %ah, %bl	#add carry from imul
 	addb C, %al	#add carry fr		om last iteration
 	adcb $0, %bl	#add carry from ^
 	addb %al, ttab(,%esi,1) 
@@ -98,7 +110,7 @@ loop_mn:
 	xor %ebx, %ebx #this iteration C
 	movb m, %al
 	imulb n(,%esi,1)
-	adcb $0, %bl
+	movb %ah, %bl
 	addb C, %al
 	adcb $0, %bl
 	addb ttab(,%esi,1), %al
@@ -106,6 +118,7 @@ loop_mn:
 	movb %bl, C
 	movb %al, ttab(,%esi,1)
 	inc %esi
+	jmp loop_mn
 
 exit_loop_mn:
 	movl size, %esi
@@ -115,17 +128,17 @@ exit_loop_mn:
 		
 	addb %bl, 1+ttab(,%esi,1)
 	xor %esi, %esi
-	
+	xor %eax, %eax
 loop_shift_right:
 	cmp size, %esi
-	je exit_shift_right
-	movb ttab(,%esi,1), %al
-	inc %esi
+	jg exit_shift_right ###### is it working
+	movb 1+ttab(,%esi,1), %al
 	movb %al, ttab(,%esi,1)
-	inc %edi
+	inc %esi
 	jmp loop_shift_right
 
 exit_shift_right:
+	incl %edi
 	jmp outter_loop	
 
 end_outter_loop:
@@ -146,7 +159,7 @@ end_outter_loop:
 	imulb n
 	adcb $0, %bl
 	addb ttab(,%esi,1), %al
-	adcb $0, %bl
+	movb %ah, %bl
 	movb %bl, C
 	movb %al, S		
 
@@ -157,7 +170,7 @@ finish:
 	xor %ebx, %ebx
 	movb n(,%esi,1), %al
 	imulb m
-	adcb $0, %bl
+	movb %ah, %bl
 	addb ttab(,%esi,1), %al
 	adcb $0, %bl
 	addb C, %al
