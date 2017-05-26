@@ -18,15 +18,15 @@ W:.space 4
 B:.space 4
 save_esi:.space 4
 D:.space 4
-a: .long 0x5255 #liczba a
-b: .long 0x5615 #liczba b
+a: .long 345 #liczba a
+b: .long 654 #liczba b
 
 .text
 .global _start
 _start:
 	movl $256,W
-	movl $50021, n
-	movl $65536, r
+	movl $501, n
+	movl $1024, r
 	pushl n
 	pushl r
 	call mulinv
@@ -38,7 +38,7 @@ _start:
 	movl %eax, n_semicolon
 	xor %esi, %esi
 	
-	movl $3, %eax #w bajtach dlugosc tabeli
+	movl $2, %eax #w bajtach dlugosc tabeli
 	movl %eax, length(,%esi,4)
 
 	
@@ -55,7 +55,7 @@ inner_loop:
 	xor %edx,%edx
 	movb b(,%esi,1), %bl
 	movb a(,%edi,1), %al
-	imulb %bl
+	mulb %bl
 	addb C, %al
 	adcb $0, %ah
 	addb t(%esi,%edi,1), %al
@@ -79,7 +79,7 @@ outer_loop_2:	#for(esi=0;esi<length;esi++){C=0;for(edi=0;edi<length;edi++{zrob m
 	movb $0, C(,%edi,1)
 	movb t(,%esi,1), %al
 	movb n_semicolon, %bl
-	imulb %bl
+	mulb %bl
 	movl W, %ebx
 	idivl %ebx
 	movb %ah, m
@@ -87,7 +87,7 @@ inner_loop_2:
 	movl %esi,tmp
 	movb n(,%edi,1), %bl
 	movb m, %bl
-	imulb %bl
+	mulb %bl
 	addb C, %ah
 	adcb $0, %ah
 	addb t(%esi,%edi,1), %al
@@ -159,7 +159,7 @@ last_loop:
 	jne return_u
 	movl length, %eax
 	movl $4,%ebx
-	imull %ebx
+	mulb %ebx
 	movl %eax,length
 	xor %edx, %edx
 	xor %eax, %eax	
