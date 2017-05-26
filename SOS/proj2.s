@@ -6,7 +6,7 @@ t: .space 12 #tablica na wynik 2*size(a)+1
 C: .space 1 #przeniesienie
 S: .space 1 #suma czesciowa
 n:.space 4
-m:.space 4
+m:.space 1 #changed to 1 byte from 4
 u:.space 8
 final_result:.space 8
 n_semicolon:.space 4
@@ -18,28 +18,29 @@ W:.space 4
 B:.space 4
 save_esi:.space 4
 D:.space 4
-a: .long 345 #liczba a
-b: .long 654 #liczba b
+a: .int 100 #liczba a
+b: .int 100 #liczba b
 
 .text
 .global _start
 _start:
 	movl $256,W
-	movl $501, n
-	movl $1024, r
+	movl $127, n
+	movl $128, r
 	pushl n
 	pushl r
 	call mulinv
 	movl %eax, r_inv
-	pushl n
 	
+	pushl n
 	pushl r
+
 	call wild_n
 	movl %eax, n_semicolon
 	xor %esi, %esi
 	
 	movl $2, %eax #w bajtach dlugosc tabeli
-	movl %eax, length(,%esi,4)
+	movl %eax, length
 
 	
 	
@@ -48,9 +49,10 @@ ab_prod:
 	xor %edi, %edi
 	xor %esi, %esi
 	movl length, %ecx
-outer_loop:	#for(esi=0;esi<length;esi++){C=0;for(edi=0;edi<length;edi++{zrob mnozenie}}
+outer_loop:	#for(esi=0;esi<length;esi++)
+		#{C=0;for(edi=0;edi<length;edi++{zrob mnozenie}}
 	xor %edi, %edi
-	movb $0, C(,%edi,1)
+	movb $0, C
 inner_loop:
 	xor %edx,%edx
 	movb b(,%esi,1), %bl
@@ -72,49 +74,55 @@ inner_loop:
 	incl %esi
 	cmpl length, %esi 
 	jl outer_loop
+	xor %esi, %esi
 
 step_2:
 outer_loop_2:	#for(esi=0;esi<length;esi++){C=0;for(edi=0;edi<length;edi++{zrob mnozenie}}
 	xor %edi, %edi
-	movb $0, C(,%edi,1)
+	movb $0, C
 	movb t(,%esi,1), %al
-	movb n_semicolon, %bl
+	movb n_semicolon, %bl #first byte
 	mulb %bl
 	movl W, %ebx
-	idivl %ebx
-	movb %ah, m
+	divl %ebx
+	movb %dl, m
 inner_loop_2:
-	movl %esi,tmp
+	xor %eax, %eax
+	xor %ebx, %ebx
 	movb n(,%edi,1), %bl
-	movb m, %bl
+	movb m, %al
 	mulb %bl
-	addb C, %ah
+	addb C, %al
 	adcb $0, %ah
 	addb t(%esi,%edi,1), %al
 	adcb $0, %ah
 	movb %ah, C
-	movb %al, S
-	movb S, %al
+	#movb %al, S
 	movb %al, t(%esi,%edi,1)
 	clc
-	xor %edx,%edx
-add_carry:
-	cmpb $0,%ah
-	jne set_carry
-
-carry_set:
-	movb t(%esi,%ecx,1),%al
-	adcb C, %al
-	setcb %ah
-	movb %al, t(%esi,%ecx,1)
-	incl %esi
-	cmpb $0,%ah	
-	jne add_carry
-
-	movl tmp, %esi #przwrocenie esi do wlasciwej wartosci
 	incl %edi
 	cmpl length, %edi
 	jl inner_loop_2
+	
+	xor %edx,%edx
+
+
+	movl %esi, tmp
+#ADD
+add_carry:
+	cmpb $0, %ah #if carry 0 exit add_carry
+	je continue_loop_outter
+	
+	movl length, %ecx
+	movb %ah, %al
+	xor %ah, %ah
+	addb %al, t(%ecx,%esi,1)
+	adcb $0, %ah
+	incl %esi
+	jmp add_carry	
+
+continue_loop_outter:
+	movl tmp, %esi
 	incl %esi
 	cmpl length, %esi 
 	jl outer_loop_2
@@ -132,51 +140,49 @@ step_3:
 	xor %esi, %esi
 	movl length, %ecx
 	movl $0, B
+
 last_loop:
 	movb u(,%esi,1), %al
 	movb n(,%esi,1), %bl
 	subb %bl, %al
-	movb b, %ah
+
+	adcb $0, %ah
+	subb B, %al
 	adcb $0, %ah
 	movb %ah, B
-	subb B, %al
-	movb %al, D(,%esi,1)
-	xor %ebx, %ebx
-	movb %bl, B
-	adcb $0,%bl
-	movb u(,%ecx,1), %al
-	subb B, %al
-	xor %edx,%edx
-	sbbb $0,%ah
-	movb %ah, B
-	movb %al, D
+
+	movb %al, t(,%esi,1)
 	cmpl %esi, %ecx
 	jl last_loop
 
-	movl B,%eax
-	cmpl $0,%eax
-	xor %esi,%esi
+	xor %eax, %eax
+	xor %ebx, %ebx
+
+	movl length, %ecx
+	movb u(,%ecx,1), %al
+	subb B, %al
+	adcb $0, %ah
+	movb %ah, B
+
+	movb %al, t(,%ecx,1)
+
+	movb B, %al
+	xor %esi, %esi
+
+	cmpb $0,%al
 	jne return_u
-	movl length, %eax
-	movl $4,%ebx
-	mulb %ebx
-	movl %eax,length
-	xor %edx, %edx
-	xor %eax, %eax	
+
+	jmp return_t
+	
 return_t:
 	movb t(,%esi,1),%al
 	movb %al, final_result(,%esi,1)
 	incl %esi
 	cmpl length, %esi
 	jle return_t
+	jmp end	
 
-end:
-	movl $1, %eax
-	movl $0, %ebx
-	int $0x80
-set_carry:
-	stc
-	jmp carry_set
+
 return_u:
 	movb u(,%esi,1),%al
 	movb %al, final_result(,%esi,1)
@@ -184,3 +190,7 @@ return_u:
 	cmpl length, %esi
 	jle return_u
 	jmp end
+
+end:
+	movl $1, %eax
+	int $0x80
