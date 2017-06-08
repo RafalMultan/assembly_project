@@ -1,63 +1,56 @@
-.code32
-.align 32
 .data
-
-t: .space 12 #tablica na wynik 2*size(a)+1
-C: .space 1 #przeniesienie
-S: .space 1 #suma czesciowa
-n:.space 4
-m:.space 1 #changed to 1 byte from 4
+t: .space 12 # tablica na wynik 2*size(a)+1
+C: .space 1 # przeniesienie
+S: .space 1 # suma czesciowa
+m: .space 1 # changed to 1 byte from 4
 u:.space 8
-final_result:.space 8
-n_semicolon:.space 4
-r:.space 4
+final_result: .space 8
+n_prim: .space 4
 r_inv:.space 4
-length:.space 4
 tmp: .space 4
-W:.space 4
 B:.space 4
 save_esi:.space 4
 D:.space 4
-a: .int 100 #liczba a
-b: .int 100 #liczba b
+a: .int 99 #liczba a
+b: .int 98
+ #liczba b
+length: .int 2
+W: .int 256
+n: .int 255
+r: .int 256
 
 .text
-.global _start
-_start:
-	movl $256,W
-	movl $127, n
-	movl $128, r
-	pushl n
-	pushl r
-	call mulinv
-	movl %eax, r_inv
-	
-	pushl n
-	pushl r
+.global main
+main:
 
-	call wild_n
-	movl %eax, n_semicolon
+
+	
+	pushl r
+	pushl n
+
+	call f_n_prim
+	movl %eax, n_prim
 	xor %esi, %esi
 	
-	movl $2, %eax #w bajtach dlugosc tabeli
-	movl %eax, length
+	addl $8, %esp
 
 	
 	
-step_1:
-ab_prod:
+# step_1
+
+# ab_prod
 	xor %edi, %edi
 	xor %esi, %esi
 	movl length, %ecx
-outer_loop:	#for(esi=0;esi<length;esi++)
-		#{C=0;for(edi=0;edi<length;edi++{zrob mnozenie}}
+
+outer_loop:		# for(esi=0;esi<length;esi++)
+				# {C=0;for(edi=0;edi<length;edi++{zrob mnozenie}}
 	xor %edi, %edi
 	movb $0, C
 inner_loop:
 	xor %edx,%edx
-	movb b(,%esi,1), %bl
 	movb a(,%edi,1), %al
-	mulb %bl
+	mulb b(,%esi,1)
 	addb C, %al
 	adcb $0, %ah
 	addb t(%esi,%edi,1), %al
@@ -77,15 +70,17 @@ inner_loop:
 	xor %esi, %esi
 
 step_2:
-outer_loop_2:	#for(esi=0;esi<length;esi++){C=0;for(edi=0;edi<length;edi++{zrob mnozenie}}
+outer_loop_2:	# for(esi=0;esi<length;esi++)
+				# {C=0;for(edi=0;edi<length;edi++{zrob mnozenie}}
 	xor %edi, %edi
 	movb $0, C
 	movb t(,%esi,1), %al
-	movb n_semicolon, %bl #first byte
+	movb n_prim, %bl # first byte
 	mulb %bl
 	movl W, %ebx
 	divl %ebx
 	movb %dl, m
+
 inner_loop_2:
 	xor %eax, %eax
 	xor %ebx, %ebx
@@ -110,7 +105,7 @@ inner_loop_2:
 	movl %esi, tmp
 #ADD
 add_carry:
-	cmpb $0, %ah #if carry 0 exit add_carry
+	cmpb $0, %ah 	# if carry 0 exit add_carry
 	je continue_loop_outter
 	
 	movl length, %ecx
@@ -192,5 +187,5 @@ return_u:
 	jmp end
 
 end:
-	movl $1, %eax
-	int $0x80
+
+ret
