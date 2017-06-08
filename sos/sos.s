@@ -11,8 +11,8 @@ tmp: .space 4
 B:.space 4
 save_esi:.space 4
 D:.space 4
-a: .int 99 #liczba a
-b: .int 98
+a: .int 100
+b: .int 100
  #liczba b
 length: .int 2
 W: .int 256
@@ -30,11 +30,10 @@ main:
 
 	call f_n_prim
 	movl %eax, n_prim
-	xor %esi, %esi
-	
 	addl $8, %esp
 
-	
+
+	xor %esi, %esi
 	
 # step_1
 
